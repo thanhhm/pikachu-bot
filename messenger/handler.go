@@ -1,40 +1,26 @@
 package messenger
 
 import (
-	"model"
+	"io"
+	"io/ioutil"
 	"net/http"
+
+	"./model"
 )
 
 func Webhook(w http.ResponseWriter, r *http.Request) {
 	s := newService(r)
 	switch r.Method {
 	case "GET":
-		s.VerifyToken()
+		{
+			challenge := s.VerifyToken()
+			io.WriteString(w, challenge)
+		}
 	case "POST":
 
 	}
-	if r.Method == "GET" {
 
-	}
 	if r.Method == "POST" {
-
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		var receivedMessage ReceivedMessage
-		if err = json.Unmarshal(body, &receivedMessage); err != nil {
-			fmt.Println(err.Error())
-		}
-
-		messagingEvents := receivedMessage.Entry[0].Messaging
-		for _, event := range messagingEvents {
-			senderID := event.Sender.ID
-			if &event.Message != nil && event.Message.Text != "" {
-				io.WriteString(w, senderID+event.Message.Text)
-			}
-		}
 
 		fmt.Println("event.Message.Text")
 		w.WriteHeader(http.StatusOK)
@@ -60,7 +46,18 @@ func newService(r *http.Request) Service {
 		}
 	case "POST":
 		{
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			var receivedMessage model.ReceivedMessage
+			if err = json.Unmarshal(body, &receivedMessage); err != nil {
+				fmt.Println(err.Error()) // TODO log
+			}
 
+			return Service{
+				receivedMesage: receivedMessage,
+			}
 		}
 	}
 }

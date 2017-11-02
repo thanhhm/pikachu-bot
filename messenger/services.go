@@ -3,6 +3,8 @@ package messenger
 import (
 	"github.com/subosito/gotenv"
 	"os"
+
+	"./model"
 )
 
 type Queries struct {
@@ -12,17 +14,34 @@ type Queries struct {
 }
 
 type Service struct {
-	queries Queries
+	queries        Queries
+	receivedMesage model.ReceivedMessage
 }
 
-func (s Service) VerifyToken() {
+func (s Service) VerifyToken() string {
+	var challenge string
+
+	// Load environment variables
 	gotenv.Load()
 
+	// Verify FB messenger request token
 	if s.queries.mode == os.Getenv("MODE") &&
 		s.queries.verifyToken == os.Getenv("VERIFY_TOKEN") {
-		io.WriteString(w, challenge)
+		challenge = s.queries.challenge
 	}
 
-	fmt.Printf(challenge)
-	w.WriteHeader(http.StatusOK)
+	return challenge
+}
+
+func (s Service) handleMessage() {
+	messagingEvents := s.receivedMessage.Entry[0].Messaging
+	for _, event := range messagingEvents {
+		senderID := event.Sender.ID
+		if &event.Message != nil && event.Message.Text != "" {
+			io.WriteString(w, senderID+event.Message.Text)
+		}
+	}
+}
+
+func callSendAPI() {
 }
