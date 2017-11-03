@@ -1,11 +1,13 @@
 package messenger
 
 import (
+	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 
-	"./model"
+	"pikachu-bot/model"
 )
 
 func Webhook(w http.ResponseWriter, r *http.Request) {
@@ -13,22 +15,19 @@ func Webhook(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		{
-			challenge := s.VerifyToken()
+			challenge := s.verifyToken()
 			io.WriteString(w, challenge)
+
 		}
 	case "POST":
-
+		s.handleMessage()
 	}
 
-	if r.Method == "POST" {
-
-		fmt.Println("event.Message.Text")
-		w.WriteHeader(http.StatusOK)
-
-	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func newService(r *http.Request) Service {
+	s := Service{}
 	switch r.Method {
 	case "GET":
 		{
@@ -37,8 +36,8 @@ func newService(r *http.Request) Service {
 			verifyToken := r.URL.Query().Get("hub.verify_token")
 			challenge := r.URL.Query().Get("hub.challenge")
 
-			return Service{
-				queries: {
+			s = Service{
+				queries: Queries{
 					mode:        mode,
 					verifyToken: verifyToken,
 					challenge:   challenge},
@@ -48,16 +47,18 @@ func newService(r *http.Request) Service {
 		{
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 			var receivedMessage model.ReceivedMessage
 			if err = json.Unmarshal(body, &receivedMessage); err != nil {
-				fmt.Println(err.Error()) // TODO log
+				log.Println(err.Error()) // TODO log
 			}
 
-			return Service{
-				receivedMesage: receivedMessage,
+			s = Service{
+				receivedMessage: receivedMessage,
 			}
 		}
 	}
+
+	return s
 }

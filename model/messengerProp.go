@@ -27,8 +27,8 @@ type Recipient struct {
 }
 
 type Message struct {
-	MID  string `json:"mid"`
-	Seq  int64  `json:"seq"`
+	// MID  string `json:"mid"`
+	// Seq  int64  `json:"seq"`
 	Text string `json:"text"`
 }
 

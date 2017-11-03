@@ -1,3 +1,4 @@
 MODE=subscribe
 VERIFY_TOKEN=verify_token
 ACCESS_TOKEN=access_token
+FACEBOOK_ENDPOINT=https://graph.facebook.com/v2.6/me/messages

@@ -1,10 +1,13 @@
 package messenger
 
 import (
-	"github.com/subosito/gotenv"
+	"bytes"
+	"encoding/json"
+	"log"
+	"net/http"
 	"os"
 
-	"./model"
+	"pikachu-bot/model"
 )
 
 type Queries struct {
@@ -14,15 +17,19 @@ type Queries struct {
 }
 
 type Service struct {
-	queries        Queries
-	receivedMesage model.ReceivedMessage
+	queries         Queries
+	receivedMessage model.ReceivedMessage
 }
 
-func (s Service) VerifyToken() string {
-	var challenge string
+type RequestBody struct {
+	recipient model.Recipient
+	message   model.Message
+}
 
-	// Load environment variables
-	gotenv.Load()
+func (s Service) verifyToken() string {
+	log.Println("On VerifyToken")
+
+	var challenge string
 
 	// Verify FB messenger request token
 	if s.queries.mode == os.Getenv("MODE") &&
@@ -34,14 +41,41 @@ func (s Service) VerifyToken() string {
 }
 
 func (s Service) handleMessage() {
+	log.Println("On handleMessage")
+
 	messagingEvents := s.receivedMessage.Entry[0].Messaging
 	for _, event := range messagingEvents {
 		senderID := event.Sender.ID
 		if &event.Message != nil && event.Message.Text != "" {
-			io.WriteString(w, senderID+event.Message.Text)
+			callSendAPI(senderID, event.Message.Text)
 		}
 	}
 }
 
-func callSendAPI() {
+func callSendAPI(senderID, text string) {
+	// Load environment variables
+	FACEBOOK_ENDPOINT := os.Getenv("FACEBOOK_ENDPOINT")
+
+	// Construct request body
+	body := RequestBody{
+		recipient: model.Recipient{ID: senderID},
+		message: model.Message{
+			Text: text},
+	}
+	log.Printf("%#v", body)
+
+	// Construct HTTP POST request
+	bodySerialize, _ := json.Marshal(body)
+	req, err := http.NewRequest("POST", FACEBOOK_ENDPOINT, bytes.NewReader(bodySerialize))
+	if err != nil {
+		log.Println(err.Error())
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	// Issue request
+	client := http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		log.Println(err.Error())
+	}
 }

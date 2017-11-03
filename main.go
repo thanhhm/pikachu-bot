@@ -1,20 +1,15 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"io"
-	"io/ioutil"
+	"github.com/subosito/gotenv"
 	"net/http"
 
-	"messenger"
+	"pikachu-bot/messenger"
 )
 
-const (
-	TOKEN        = ""
-	VERIFY_TOKEN = "verify_token"
-)
+func init() {
+	gotenv.Load(".evn")
+}
 
 func main() {
 	http.HandleFunc("/webhook", messenger.Webhook)
