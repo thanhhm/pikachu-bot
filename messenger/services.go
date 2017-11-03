@@ -3,8 +3,10 @@ package messenger
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"pikachu-bot/model"
@@ -22,8 +24,8 @@ type Service struct {
 }
 
 type RequestBody struct {
-	recipient model.Recipient
-	message   model.Message
+	Recipient model.Recipient `json:"recipient"`
+	Message   model.Message   `json:"message"`
 }
 
 func (s Service) verifyToken() string {
@@ -55,11 +57,12 @@ func (s Service) handleMessage() {
 func callSendAPI(senderID, text string) {
 	// Load environment variables
 	FACEBOOK_ENDPOINT := os.Getenv("FACEBOOK_ENDPOINT")
+	ACCESS_TOKEN := os.Getenv("ACCESS_TOKEN")
 
 	// Construct request body
 	body := RequestBody{
-		recipient: model.Recipient{ID: senderID},
-		message: model.Message{
+		Recipient: model.Recipient{ID: senderID},
+		Message: model.Message{
 			Text: text},
 	}
 	log.Printf("%#v", body)
@@ -70,12 +73,28 @@ func callSendAPI(senderID, text string) {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
+
+	// Add access token on query parameter
+	values := url.Values{}
+	values.Add("access_token", ACCESS_TOKEN)
+	req.URL.RawQuery = values.Encode()
 
 	// Issue request
 	client := http.Client{}
-	_, err = client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		log.Println(err.Error())
 	}
+
+	defer res.Body.Close()
+	var result map[string]interface{}
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	if err := json.Unmarshal(resBody, &result); err != nil {
+		log.Println(err.Error())
+	}
+	log.Print(result)
 }

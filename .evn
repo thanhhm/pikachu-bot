@@ -1,4 +1,4 @@
 MODE=subscribe
 VERIFY_TOKEN=verify_token
-ACCESS_TOKEN=access_token
+ACCESS_TOKEN=EAABbehzZCyusBAJL1z6W3wDlPhrZCZAqqNTCzjFnBkZBboqo98TmrZA9HqU1kGINVvqePDao0sQM0yTT2btor6JxgyKpI18MLrZBHkQDK5ZBhp8Vhv48ZAQw0lVYKWATLtvuqtUPjBLhQOxqj5vE7862rCI6AckWUlCZB17C03EpioMu5WCFoloAB
 FACEBOOK_ENDPOINT=https://graph.facebook.com/v2.6/me/messages
