@@ -13,13 +13,17 @@ import (
 	"pikachu-bot/model"
 )
 
-const (
+var (
 	// Load environment variables
-	FACEBOOK_ENDPOINT = os.Getenv("FACEBOOK_ENDPOINT")
-	ACCESS_TOKEN      = os.Getenv("ACCESS_TOKEN")
-	MODE              = os.Getenv("MODE")
-	VERIFY_TOKEN      = os.Getenv("VERIFY_TOKEN")
-	ACCEPTED_PERCENT  = 50
+	MESSENGER_ENDPOINT  = os.Getenv("MESSENGER_ENDPOINT")
+	GROUP_FEED_ENDPOINT = os.Getenv("GROUP_FEED_ENDPOINT")
+	ACCESS_TOKEN        = os.Getenv("ACCESS_TOKEN")
+	MODE                = os.Getenv("MODE")
+	VERIFY_TOKEN        = os.Getenv("VERIFY_TOKEN")
+)
+
+const (
+	ACCEPTED_PERCENT = 50
 )
 
 type Queries struct {
@@ -47,6 +51,12 @@ type RequestBody struct {
 	Message   model.Message   `json:"message"`
 }
 
+type BatchRequest struct {
+	Method      string `json:"method"`
+	RelativeURL string `json:"relative_url"`
+	Body        string `json:"body"`
+}
+
 func (s Service) verifyToken() string {
 	log.Println("On VerifyToken")
 
@@ -69,26 +79,26 @@ func (s Service) handleMessage() {
 		if &event.Message != nil && event.Message.Text != "" {
 			// Search feed relate with eventMessage
 			groupFeed := getGroupFeed()
-			data := analyzeFeed(eventMessage, groupFeed.Data)
+			data := analyzeFeed(event.Message.Text, groupFeed.Data)
 
 			// Post to sender
-			callSendAPI(senderID, data)
+			callBatchRequest(senderID, data)
 		}
 	}
 }
 
 func getGroupFeed() (groupFeed GroupFeed) {
 	// Create GET request
-	req, err := http.NewRequest("GET", FACEBOOK_ENDPOINT, nil)
+	req, err := http.NewRequest("GET", GROUP_FEED_ENDPOINT, nil)
 	if err != nil {
 		log.Println(err.Error())
 	}
 
 	// Add access token query parameter
-	values := url.Values
+	values := url.Values{}
 	values.Add("access_token", ACCESS_TOKEN)
+	values.Add("fields", "message,permalink_url")
 	req.URL.RawQuery = values.Encode()
-	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
 
 	// Issue request
 	client := new(http.Client)
@@ -99,11 +109,11 @@ func getGroupFeed() (groupFeed GroupFeed) {
 	defer res.Body.Close()
 
 	// Parse resposne body
-	body, err := ioutil.ReadAll(res.Body)
+	body, _ := ioutil.ReadAll(res.Body)
+	err = json.Unmarshal(body, &groupFeed)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	groupFeed = json.Unmarshal(body, &groupFeed)
 
 	return groupFeed
 }
@@ -124,7 +134,7 @@ func analyzeFeed(eventMessage string, data []Feed) (d []Feed) {
 
 func calculatePercent(eventMessage string, feed Feed) float64 {
 	words := strings.Split(eventMessage, " ")
-	count := 0
+	var count float64
 	for _, w := range words {
 		if strings.Contains(feed.Message, w) {
 			count++
@@ -132,7 +142,7 @@ func calculatePercent(eventMessage string, feed Feed) float64 {
 	}
 
 	// Percent contain eventMessage words
-	return count / len(words)
+	return count / float64(len(words))
 }
 
 func callSendAPI(senderID, text string) {
@@ -146,7 +156,7 @@ func callSendAPI(senderID, text string) {
 
 	// Construct HTTP POST request
 	bodySerialize, _ := json.Marshal(body)
-	req, err := http.NewRequest("POST", FACEBOOK_ENDPOINT, bytes.NewReader(bodySerialize))
+	req, err := http.NewRequest("POST", MESSENGER_ENDPOINT, bytes.NewReader(bodySerialize))
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -176,6 +186,36 @@ func callSendAPI(senderID, text string) {
 	// log.Print(result)
 }
 
-func callBatchRequest(senderID string, data []feed) {
+func callBatchRequest(senderID string, data []Feed) {
+	// Construct batch request
+	batchRequests := []BatchRequest{}
+	for _, v := range data {
+		b := BatchRequest{
+			Method:      "POST",
+			RelativeURL: "me/message",
+			Body:        v.Message + "; Link: " + v.PermalinkURL,
+		}
+		batchRequests = append(batchRequests, b)
+	}
 
+	// Construct HTTP POST request
+	bodySerialize, _ := json.Marshal(batchRequests)
+	req, err := http.NewRequest("POST", "https://graph.facebook.com", bytes.NewReader(bodySerialize))
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	// Add access token query parameter
+	values := url.Values{}
+	values.Add("access_token", ACCESS_TOKEN)
+	req.URL.RawQuery = values.Encode()
+	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
+
+	// Issue request
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer res.Body.Close()
 }

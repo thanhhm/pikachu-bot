@@ -1,4 +1,10 @@
 MODE=subscribe
 VERIFY_TOKEN=verify_token
-ACCESS_TOKEN=EAACEdEose0cBAI8ZCogHkIPiS3tSl6tXV3ivRpn2MzS8eEPLFLFRzZBuzoChzKJ65MwhnEnSWRak9y82j8TnjIPReXyMzwo4qrHm8iwfHUyWPhBKNkZB7QInkmDhd4EhWwiWHJjy5vyjZBosKZCoYxYMjy3rzXnUTrwwmEOoSzSy46HxDLj4tgdpgaxYZBt4ZAHRVMpLiEZBZAwZDZD
-FACEBOOK_ENDPOINT=https://graph.facebook.com/v2.6/me/messages
+ACCESS_TOKEN=EAACEdEose0cBAOAuZAiTKBTQOp22pQ3yEWMoFoHHu0iJ93ANkZCWotGIrZAeP37sqIXx3raulxaZAsVcsYEp5pDalKqVuncC6CN6ZBpldLlCIeLqb6c7dmKnoPzPQKUb4TF7cq4vk0ZA8FeUk5gwXePB5fNjhzIAQ4MDoCmDLfUhKBNZCZBUrYxTFNFeewHZBkoAZD
+
+# Messenger platform
+MESSENGER_ENDPOINT=https://graph.facebook.com/v2.10/me/messages
+
+# Group feed
+GROUP_FEED_ENDPOINT=https://graph.facebook.com/v2.10/189697534480830
+
