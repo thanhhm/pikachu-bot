@@ -67,14 +67,14 @@ func (s Service) handleMessage() {
 	for _, event := range messagingEvents {
 		senderID := event.Sender.ID
 		if &event.Message != nil && event.Message.Text != "" {
-			callSendAPI(senderID, event.Message.Text)
+			// Search feed relate with eventMessage
+			groupFeed := getGroupFeed()
+			data := analyzeFeed(eventMessage, groupFeed.Data)
+
+			// Post to sender
+			callSendAPI(senderID, data)
 		}
 	}
-}
-
-func searchGroupFeed() {
-	groupFeed := getGroupFeed()
-
 }
 
 func getGroupFeed() (groupFeed GroupFeed) {
@@ -108,13 +108,21 @@ func getGroupFeed() (groupFeed GroupFeed) {
 	return groupFeed
 }
 
-func analyzeFeed(eventMessage string, groupFeed GroupFeed) {
-	for _, feed := range groupFeed.Data {
+func analyzeFeed(eventMessage string, data []Feed) (d []Feed) {
+	var per float64
+	for _, feed := range data {
+		per = calculatePercent(eventMessage, feed)
 
+		// Choose relation feed
+		if per >= ACCEPTED_PERCENT {
+			d = append(d, feed)
+		}
 	}
+
+	return d
 }
 
-func calculateFrequency(eventMessage string, feed Feed) float64 {
+func calculatePercent(eventMessage string, feed Feed) float64 {
 	words := strings.Split(eventMessage, " ")
 	count := 0
 	for _, w := range words {
@@ -123,7 +131,8 @@ func calculateFrequency(eventMessage string, feed Feed) float64 {
 		}
 	}
 
-	return count / len(strings.Split(feed.Message, " "))
+	// Percent contain eventMessage words
+	return count / len(words)
 }
 
 func callSendAPI(senderID, text string) {
@@ -165,4 +174,8 @@ func callSendAPI(senderID, text string) {
 	// 	log.Println(err.Error())
 	// }
 	// log.Print(result)
+}
+
+func callBatchRequest(senderID string, data []feed) {
+
 }
