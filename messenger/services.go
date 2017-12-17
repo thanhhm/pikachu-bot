@@ -67,13 +67,18 @@ func (s Service) handleMessage() {
 	messagingEvents := s.receivedMessage.Entry[0].Messaging
 	for _, event := range messagingEvents {
 		senderID := event.Sender.ID
+
 		if &event.Message != nil && event.Message.Text != "" {
 			// Search feed relate with eventMessage
 			groupFeed := getGroupFeed()
 			data := analyzeFeed(event.Message.Text, groupFeed.Data)
 
 			// Post to sender
-			callBatchRequest(senderID, data)
+			// callBatchRequest(senderID, data)
+			log.Println(data)
+			for _, v := range data {
+				callSendAPI(senderID, v.Message+"Link:"+v.PermalinkURL)
+			}
 		}
 	}
 }
@@ -88,8 +93,9 @@ func getGroupFeed() (groupFeed GroupFeed) {
 
 	// Add access token query parameter
 	values := url.Values{}
-	values.Add("access_token", os.Getenv("ACCESS_TOKEN"))
+	values.Add("access_token", os.Getenv("GROUP_ACCESS_TOKEN"))
 	values.Add("fields", "message,permalink_url")
+	values.Add("limit", "10")
 	req.URL.RawQuery = values.Encode()
 
 	// Issue request
@@ -114,7 +120,6 @@ func analyzeFeed(eventMessage string, data []Feed) (d []Feed) {
 	log.Println("On analyzeFeed")
 	var per float64
 	for _, feed := range data {
-		log.Println("feed: %v", feed)
 		per = calculatePercent(eventMessage, feed)
 
 		// Choose relation feed
@@ -134,9 +139,8 @@ func calculatePercent(eventMessage string, feed Feed) float64 {
 			count++
 		}
 	}
-
 	// Percent contain eventMessage words
-	return count / float64(len(words))
+	return (count / float64(len(words))) * 100
 }
 
 func callSendAPI(senderID, text string) {
@@ -157,9 +161,66 @@ func callSendAPI(senderID, text string) {
 
 	// Add access token query parameter
 	values := url.Values{}
-	values.Add("access_token", os.Getenv("ACCESS_TOKEN"))
+	values.Add("access_token", os.Getenv("PAGE_ACCESS_TOKEN"))
 	req.URL.RawQuery = values.Encode()
 	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
+
+	// Issue request
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer res.Body.Close()
+
+	var result map[string]interface{}
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	if err := json.Unmarshal(resBody, &result); err != nil {
+		log.Println(err.Error())
+	}
+	log.Print(result)
+}
+
+func callBatchRequest(senderID string, data []Feed) { // Construct request body
+	// Construct batch request
+	batchRequests := []BatchRequest{}
+	for _, v := range data {
+		// Construct body content
+		body := RequestBody{
+			Recipient: model.Recipient{ID: senderID},
+			Message: model.Message{
+				Text: v.Message + "; Link: " + v.PermalinkURL},
+		}
+		bstr, _ := json.Marshal(body)
+		b := BatchRequest{
+			Method:      "POST",
+			RelativeURL: "me/messages",
+			Body:        string(bstr),
+		}
+		batchRequests = append(batchRequests, b)
+
+	}
+
+	// Construct HTTP POST request
+	bodySerialize, _ := json.Marshal(batchRequests)
+	batch := "batch=" + string(bodySerialize)
+	batch = `batch=[{"method":"POST", "relative_url":"me/messages",
+		"body":{"recipient":"` + senderID + `", "message": {"text":"test"}}},
+		{"method":"POST", "relative_url":"me/messages",
+		"body":{"recipient":"` + senderID + `", "message": {"text":"test"}}}]`
+	req, err := http.NewRequest("POST", "https://graph.facebook.com", bytes.NewReader([]byte(batch)))
+	if err != nil {
+		log.Println(err.Error())
+	}
+	log.Println(batch)
+	// Add access token query parameter
+	values := url.Values{}
+	values.Add("access_token", os.Getenv("PAGE_ACCESS_TOKEN"))
+	req.URL.RawQuery = values.Encode()
+	// req.Header.Add("Content-Type", "application/json; charset=UTF-8")
 
 	// Issue request
 	client := http.Client{}
@@ -170,46 +231,12 @@ func callSendAPI(senderID, text string) {
 	defer res.Body.Close()
 
 	// var result map[string]interface{}
-	// resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := ioutil.ReadAll(res.Body)
 	// if err != nil {
 	// 	log.Println(err.Error())
 	// }
 	// if err := json.Unmarshal(resBody, &result); err != nil {
 	// 	log.Println(err.Error())
 	// }
-	// log.Print(result)
-}
-
-func callBatchRequest(senderID string, data []Feed) {
-	// Construct batch request
-	batchRequests := []BatchRequest{}
-	for _, v := range data {
-		b := BatchRequest{
-			Method:      "POST",
-			RelativeURL: "me/message",
-			Body:        v.Message + "; Link: " + v.PermalinkURL,
-		}
-		batchRequests = append(batchRequests, b)
-	}
-
-	// Construct HTTP POST request
-	bodySerialize, _ := json.Marshal(batchRequests)
-	req, err := http.NewRequest("POST", "https://graph.facebook.com", bytes.NewReader(bodySerialize))
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	// Add access token query parameter
-	values := url.Values{}
-	values.Add("access_token", os.Getenv("ACCESS_TOKEN"))
-	req.URL.RawQuery = values.Encode()
-	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
-
-	// Issue request
-	client := http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	defer res.Body.Close()
+	log.Println(string(resBody))
 }

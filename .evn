@@ -1,9 +1,11 @@
 MODE=subscribe
 VERIFY_TOKEN=verify_token
-ACCESS_TOKEN=EAACEdEose0cBAEPbUYHXibm7xXRp9ZCHZAisEXoS3btuuOYZA19fa5WZAPcdjI0ZAt01eEHnZCvTKUE2XgzJ8Mkz3LaHqpPWdZBRo68SNN1tt6ACKGuDZCbU3i0x0mq9V6E6ZBRUZA1W8p2ogW1T3wrCpy51K3UoBIGdL9rj47Ambf0ZAZB9rYTBSgvZACIvyxzLsPVoZD
+PAGE_ACCESS_TOKEN=page_access_token
+GROUP_ACCESS_TOKEN=group_access_token
+
 
 #Messenger platform
 MESSENGER_ENDPOINT=https://graph.facebook.com/v2.10/me/messages
 
-#Group feed
-GROUP_FEED_ENDPOINT=https://graph.facebook.com/v2.10/189697534480830/feed
+#Group feed: https://www.facebook.com/groups/298225103702931/about/
+GROUP_FEED_ENDPOINT=https://graph.facebook.com/v2.10/298225103702931/feed
