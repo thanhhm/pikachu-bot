@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"pikachu-bot/model"
+	"github.com/thanhhm/pikachu-bot/model"
 )
 
 const (

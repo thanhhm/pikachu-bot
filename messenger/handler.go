@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"pikachu-bot/model"
+	"github.com/thanhhm/pikachu-bot/model"
 )
 
 func Webhook(w http.ResponseWriter, r *http.Request) {

@@ -4,7 +4,7 @@ import (
 	"github.com/subosito/gotenv"
 	"net/http"
 
-	"pikachu-bot/messenger"
+	"github.com/thanhhm/pikachu-bot/messenger"
 )
 
 func init() {
